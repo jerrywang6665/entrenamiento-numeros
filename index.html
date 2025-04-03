@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrenamiento Auditivo de Números en Español</title>
+    <title>西班牙语数字听力训练</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Microsoft YaHei', sans-serif;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
@@ -22,6 +22,12 @@
         h1 {
             color: #2c3e50;
             text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
         }
         .controls {
             display: flex;
@@ -37,7 +43,7 @@
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
         button:hover {
             background-color: #2980b9;
@@ -53,6 +59,7 @@
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
+            color: #34495e;
         }
         select, input {
             width: 100%;
@@ -60,50 +67,73 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             margin-bottom: 15px;
+            font-family: inherit;
         }
         .history {
             margin-top: 30px;
             border-top: 1px solid #eee;
             padding-top: 20px;
         }
+        .history-title {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
         .history-item {
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .number {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .time {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .interval-display {
+            text-align: center;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            color: #3498db;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Entrenamiento Auditivo de Números</h1>
-        <p>Practica el reconocimiento de números en español (1-100,000)</p>
+        <h1>西班牙语数字听力训练</h1>
+        <p class="subtitle">通过听力练习掌握西班牙语数字 (1-100,000)</p>
         
         <div class="settings">
-            <label for="difficulty">Nivel de Dificultad:</label>
+            <label for="difficulty">难度级别：</label>
             <select id="difficulty">
-                <option value="100">Básico (1-100)</option>
-                <option value="1000">Intermedio (1-1,000)</option>
-                <option value="10000">Avanzado (1-10,000)</option>
-                <option value="100000">Experto (1-100,000)</option>
+                <option value="100">初级 (1-100)</option>
+                <option value="1000">中级 (1-1,000)</option>
+                <option value="10000">高级 (1-10,000)</option>
+                <option value="100000">专家级 (1-100,000)</option>
             </select>
             
-            <label for="interval">Intervalo entre números (segundos):</label>
+            <label for="interval">数字间隔时间：</label>
             <input type="range" id="interval" min="1" max="5" step="0.5" value="3">
-            <span id="intervalValue">3</span> segundos
+            <div class="interval-display">
+                <span id="intervalValue">3</span> 秒
+            </div>
         </div>
         
         <div class="controls">
-            <button id="startBtn">Comenzar Entrenamiento</button>
-            <button id="stopBtn" disabled>Detener</button>
+            <button id="startBtn">开始训练</button>
+            <button id="stopBtn" disabled>停止训练</button>
         </div>
         
         <div class="history">
-            <h3>Números Recientes:</h3>
+            <h3 class="history-title">最近播放：</h3>
             <div id="historyList"></div>
         </div>
     </div>
 
     <script>
-        // Spanish number to words conversion
+        // 西班牙语数字转换
         function numberToWords(num) {
             const units = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 
                           'seis', 'siete', 'ocho', 'nueve'];
@@ -117,6 +147,7 @@
             if (num === 0) return units[0];
             if (num < 10) return units[num];
             if (num < 20) return teens[num - 10];
+            if (num === 20) return 'veinte';
             if (num < 30) return 'veinti' + units[num - 20];
             if (num < 100) {
                 return tens[Math.floor(num / 10)] + 
@@ -127,19 +158,20 @@
                 return hundreds[Math.floor(num / 100)] + 
                       (num % 100 ? ' ' + numberToWords(num % 100) : '');
             }
+            if (num === 1000) return 'mil';
             if (num < 2000) {
-                return 'mil' + (num % 1000 ? ' ' + numberToWords(num % 1000) : '');
+                return 'mil ' + (num % 1000 ? numberToWords(num % 1000) : '');
             }
             if (num < 1000000) {
                 const thousands = Math.floor(num / 1000);
-                return numberToWords(thousands) + ' mil' + 
+                return (thousands === 1 ? '' : numberToWords(thousands) + ' ') + 'mil' + 
                       (num % 1000 ? ' ' + numberToWords(num % 1000) : '');
             }
             return numberToWords(Math.floor(num / 1000000)) + ' millón' + 
                   (num % 1000000 ? ' ' + numberToWords(num % 1000000) : '');
         }
 
-        // Training system
+        // 训练系统
         const trainer = {
             isRunning: false,
             intervalId: null,
@@ -178,7 +210,7 @@
             },
             
             generateNumber(max) {
-                // Generate random number with logarithmic distribution
+                // 对数分布生成数字（更频繁出现较小数字）
                 const exp = Math.random() * Math.log10(max);
                 const num = Math.floor(Math.pow(10, exp));
                 return Math.min(num, max);
@@ -229,13 +261,17 @@
                 this.history.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'history-item';
-                    div.textContent = `${item.time}: ${item.number} (${item.text})`;
+                    div.innerHTML = `
+                        <span class="number">${item.number}</span>
+                        <span>${item.text}</span>
+                        <span class="time">${item.time}</span>
+                    `;
                     historyList.appendChild(div);
                 });
             }
         };
 
-        // Initialize
+        // 初始化
         document.getElementById('interval').addEventListener('input', function() {
             document.getElementById('intervalValue').textContent = this.value;
         });
@@ -243,12 +279,15 @@
         document.getElementById('startBtn').addEventListener('click', () => trainer.start());
         document.getElementById('stopBtn').addEventListener('click', () => trainer.stop());
         
-        // Load voices when available
+        // 加载语音
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = function() {
-                console.log("Voces disponibles:", speechSynthesis.getVoices());
+                console.log("可用语音:", speechSynthesis.getVoices());
             };
         }
+        
+        // 首次加载时获取语音列表
+        window.speechSynthesis.getVoices();
     </script>
 </body>
 </html>
