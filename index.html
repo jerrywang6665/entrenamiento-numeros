@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrenamiento Auditivo de Números en Español</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 30px 0;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .settings {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .history {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .history-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Entrenamiento Auditivo de Números</h1>
+        <p>Practica el reconocimiento de números en español (1-100,000)</p>
+        
+        <div class="settings">
+            <label for="difficulty">Nivel de Dificultad:</label>
+            <select id="difficulty">
+                <option value="100">Básico (1-100)</option>
+                <option value="1000">Intermedio (1-1,000)</option>
+                <option value="10000">Avanzado (1-10,000)</option>
+                <option value="100000">Experto (1-100,000)</option>
+            </select>
+            
+            <label for="interval">Intervalo entre números (segundos):</label>
+            <input type="range" id="interval" min="1" max="5" step="0.5" value="3">
+            <span id="intervalValue">3</span> segundos
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">Comenzar Entrenamiento</button>
+            <button id="stopBtn" disabled>Detener</button>
+        </div>
+        
+        <div class="history">
+            <h3>Números Recientes:</h3>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Spanish number to words conversion
+        function numberToWords(num) {
+            const units = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 
+                          'seis', 'siete', 'ocho', 'nueve'];
+            const teens = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince',
+                          'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+            const tens = ['', 'diez', 'veinte', 'treinta', 'cuarenta', 'cincuenta',
+                         'sesenta', 'setenta', 'ochenta', 'noventa'];
+            const hundreds = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos',
+                            'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+            
+            if (num === 0) return units[0];
+            if (num < 10) return units[num];
+            if (num < 20) return teens[num - 10];
+            if (num < 30) return 'veinti' + units[num - 20];
+            if (num < 100) {
+                return tens[Math.floor(num / 10)] + 
+                      (num % 10 ? ' y ' + units[num % 10] : '');
+            }
+            if (num === 100) return 'cien';
+            if (num < 1000) {
+                return hundreds[Math.floor(num / 100)] + 
+                      (num % 100 ? ' ' + numberToWords(num % 100) : '');
+            }
+            if (num < 2000) {
+                return 'mil' + (num % 1000 ? ' ' + numberToWords(num % 1000) : '');
+            }
+            if (num < 1000000) {
+                const thousands = Math.floor(num / 1000);
+                return numberToWords(thousands) + ' mil' + 
+                      (num % 1000 ? ' ' + numberToWords(num % 1000) : '');
+            }
+            return numberToWords(Math.floor(num / 1000000)) + ' millón' + 
+                  (num % 1000000 ? ' ' + numberToWords(num % 1000000) : '');
+        }
+
+        // Training system
+        const trainer = {
+            isRunning: false,
+            intervalId: null,
+            history: [],
+            
+            start() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                
+                const difficulty = parseInt(document.getElementById('difficulty').value);
+                const interval = parseFloat(document.getElementById('interval').value) * 1000;
+                
+                this.playNumber(difficulty);
+                
+                this.intervalId = setInterval(() => {
+                    this.playNumber(difficulty);
+                }, interval);
+            },
+            
+            stop() {
+                if (!this.isRunning) return;
+                
+                clearInterval(this.intervalId);
+                this.isRunning = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+            },
+            
+            playNumber(max) {
+                const num = this.generateNumber(max);
+                this.speak(numberToWords(num));
+                this.addToHistory(num);
+            },
+            
+            generateNumber(max) {
+                // Generate random number with logarithmic distribution
+                const exp = Math.random() * Math.log10(max);
+                const num = Math.floor(Math.pow(10, exp));
+                return Math.min(num, max);
+            },
+            
+            speak(text) {
+                const utterance = new SpeechSynthesisUtterance();
+                utterance.text = text;
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoices = [
+                    'Google español',
+                    'Microsoft Helena - Spanish',
+                    'Paulina'
+                ];
+                
+                for (const name of preferredVoices) {
+                    const voice = voices.find(v => v.name.includes(name));
+                    if (voice) {
+                        utterance.voice = voice;
+                        break;
+                    }
+                }
+                
+                window.speechSynthesis.speak(utterance);
+            },
+            
+            addToHistory(num) {
+                this.history.unshift({
+                    number: num,
+                    text: numberToWords(num),
+                    time: new Date().toLocaleTimeString()
+                });
+                
+                if (this.history.length > 10) {
+                    this.history.pop();
+                }
+                
+                this.updateHistoryDisplay();
+            },
+            
+            updateHistoryDisplay() {
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '';
+                
+                this.history.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.textContent = `${item.time}: ${item.number} (${item.text})`;
+                    historyList.appendChild(div);
+                });
+            }
+        };
+
+        // Initialize
+        document.getElementById('interval').addEventListener('input', function() {
+            document.getElementById('intervalValue').textContent = this.value;
+        });
+        
+        document.getElementById('startBtn').addEventListener('click', () => trainer.start());
+        document.getElementById('stopBtn').addEventListener('click', () => trainer.stop());
+        
+        // Load voices when available
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = function() {
+                console.log("Voces disponibles:", speechSynthesis.getVoices());
+            };
+        }
+    </script>
+</body>
+</html>
